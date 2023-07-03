@@ -28,6 +28,15 @@ builder.Services.AddSingleton<IMongoDatabase>(options =>
 
 builder.Configuration.AddUserSecrets(Assembly.GetExecutingAssembly(), true);
 
+builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout as per your requirement
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // mongo identity configuration.
 var mongoDbIdentityConfig = new MongoDbIdentityConfiguration
 {
@@ -53,7 +62,9 @@ var mongoDbIdentityConfig = new MongoDbIdentityConfiguration
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICartService, CartService>();
 
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.ConfigureMongoDbIdentity<ApplicationUser, ApplicationRole, Guid>(mongoDbIdentityConfig)
     .AddUserManager<UserManager<ApplicationUser>>()
@@ -135,7 +146,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
-
+app.UseSession();
 app.UseAuthorization();
 
 app.MapControllers();

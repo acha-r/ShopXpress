@@ -1,30 +1,27 @@
 ﻿using System;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using MongoDbGenericRepository.Attributes;
 
 namespace ShopXpress.Models.Entities
 {
-    [CollectionName("products")]
-    public class Product
+    public class CartItem
     {
+
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
-        [BsonElement("merchantsId")]
+        [BsonElement("userId")]
         public string UserId { get; set; }
-        [BsonElement("name")]
-        public string Name { get; set; }
-        [BsonElement("description")]
-        public string Description { get; set; }
-        [BsonElement("price")]
-        public decimal Price { get; set; }
+        [BsonElement("cartId")]
+        public string CartId { get; set; }
+        [BsonElement("productId")]
+        public string ProductId { get; set; }
         [BsonElement("quantity")]
         public int Quantity { get; set; }
         [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [BsonElement("updatedAt")]
-        public DateTime? UpdatedAt { get; set; }
+        public string? UpdatedAt { get; set; }
     }
 }
 

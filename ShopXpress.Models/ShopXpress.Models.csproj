@@ -10,9 +10,11 @@
     <None Remove="Entities\" />
     <None Remove="MongoDB.Bson" />
     <None Remove="AspNetCore.Identity.MongoDbCore" />
+    <None Remove="Enums\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Entities\" />
+    <Folder Include="Enums\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MongoDB.Bson" Version="2.20.0" />

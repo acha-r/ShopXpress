@@ -33,6 +33,7 @@ namespace ShopXpress.Services.Implementations
             return new Product
             {
                 Id = product.Id,
+                UserId = product.UserId,
                 Name = product.Name,
                 Quantity = product.Quantity,
                 Price = product.Price,
