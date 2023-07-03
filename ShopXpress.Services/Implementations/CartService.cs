@@ -148,36 +148,37 @@ namespace ShopXpress.Services.Implementations
         public async Task<CartResponse> CreateCart(string userId, string productId, int quantity)
         {
             var sessionID = _httpContextAccessor.HttpContext.Session.Id;
+            
+            //check and verify product status
+            var existingProduct = _productService.Find(product => product.Id == productId).FirstOrDefault();
+            
+            if (existingProduct is null)
+                return new CartResponse
+                {
+                    Success = false,
+                    Message = "Product either does not exist or has been deleted"
+                };
+
+            if (existingProduct.UserId == userId)
+                return new CartResponse
+                {
+                    Message = "You cannot buy your own products",
+                    Success = false
+                };
+
+            if (existingProduct.Quantity < quantity)
+                return new CartResponse
+                {
+                    Message = $"OOPS! Insufficient Products\nWe currently have {existingProduct.Quantity} of {existingProduct.Name} in our store, " +
+                    $"\nyour order exceeds that! \nReduce your order and try again \nor check again in a few days after restock",
+                    Success = false
+                };
+
+            //check cart status
             var existingCart = _cartService.Find(cart => cart.UserId == userId).FirstOrDefault();
 
             if (existingCart == null)
             {
-
-                var existingProduct = _productService.Find(product => product.Id == productId).FirstOrDefault();
-
-                if (existingProduct is null)
-                    return new CartResponse
-                    {
-                        Success = false,
-                        Message = "Product either does not exist or has been deleted"
-                    };
-
-                if (existingProduct.UserId == userId)
-                    return new CartResponse
-                    {
-                        Message = "You cannot buy your own products",
-                        Success = false
-                    };
-
-                if (existingProduct.Quantity < quantity)
-                    return new CartResponse
-                    {
-                        Message = $"OOPS! Insufficient Products\nWe currently have {existingProduct.Quantity} of {existingProduct.Name} in our store, " +
-                        $"\nyour order exceeds that! \nReduce your order and try again \nor check again in a few days after restock",
-                        Success = false
-                    };
-
-
                 var cart = new Cart()
                 {
                     UserId = userId,
@@ -195,7 +196,7 @@ namespace ShopXpress.Services.Implementations
                 };
 
                 cart.CartItems.Add(cartItem);
-
+                await _cartItemService.InsertOneAsync(cartItem);
                 await _cartService.InsertOneAsync(cart);
 
                 return new CartResponse
@@ -203,33 +204,52 @@ namespace ShopXpress.Services.Implementations
                     Message = $"cart has been created with {quantity} quantity of {existingProduct.Name}",
                     Success = true
                 };
-            }
-
-            
-
+            } else
+            {
+                //Kinda started here
                 var cartProduct = _cartItemService.Find(item => item.ProductId == productId).FirstOrDefault();
 
                 if (cartProduct != null)
                 {
-                  cartProduct.Quantity += quantity;
-                  var productFilter = Builders<Cart>.Filter.Eq("productId", cartProduct.ProductId);
-                  var update = Builders<Cart>.Update.Set("quantity", cartProduct.Quantity);
-                   await _cartService.UpdateOneAsync(productFilter, update);
+                    cartProduct.Quantity += quantity;
+                    var productFilter = Builders<CartItem>.Filter.Eq("productId", productId); //changed Cart to CartItem
+                    var update = Builders<CartItem>.Update.Set("quantity", cartProduct.Quantity);
+                    await _cartItemService.UpdateOneAsync(productFilter, update);
+
+
+                    //after updating cart item collection with new value, i updated main Cart collection from here
+                    var cartItemFilter = Builders<Cart>.Filter.Eq("userId", existingCart.UserId) & 
+                        Builders<Cart>.Filter.ElemMatch(x => x.CartItems, elem => elem.ProductId == cartProduct.ProductId);
+
+                    //get index of cart item in cart collection
+                    int indx = 0;
+                    for (int i = 0; i < existingCart.CartItems.Count; i++)
+                    {
+                        if (existingCart.CartItems[i].ProductId == cartProduct.ProductId)
+                            indx = i;
+                    }
+                    var updateList = Builders<Cart>.Update.Set(x => x.CartItems[indx].Quantity, cartProduct.Quantity);
+
+                    await _cartService.UpdateOneAsync(cartItemFilter, updateList); //end here
 
                     return new CartResponse
                     {
                         Success = true,
                         Message = $"Cart item: Quantity increased"
                     };
-                
+
                 }
 
 
-            return new CartResponse
-            {
-                Success = true,
-                Message = $"{quantity} unit(s) of item Added"
-            };
+                return new CartResponse
+                {
+                    Success = true,
+                    Message = $"{quantity} unit(s) of item Added"
+                };
+            }
+
+            
+
 
         }
 

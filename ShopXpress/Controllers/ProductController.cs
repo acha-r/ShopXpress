@@ -6,7 +6,7 @@ using ShopXpress.Services.Interfaces;
 
 namespace ShopXpress.Controllers
 {
-    [Authorize]
+   // [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProductController : Controller
